@@ -1,46 +1,34 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Newtonsoft.Json;
-using NUnit.Framework;
-using osu.Game.Beatmaps;
-using osu.Game.Beatmaps.Formats;
-using osu.Game.IO;
-using osu.Game.Rulesets.Mods;
-using osu.Game.Rulesets.Osu.Difficulty;
-using osu.Game.Rulesets.Osu.Mods;
-using osu.Game.Tests.Beatmaps;
-
 namespace osu.Game.Rulesets.Osu.Tests
 {
     class ExpectedAttributes
     {
         // Bitmask isn't really future proof for mods such as "Blinds"
-        public List<String> mods { get; set; }
+        public List<String>? mods { get; set; }
         public double starRating { get; set; }
 
-        // public double aimRating { get; set; }
-        // public double speedRating { get; set; }
-        // public double flashlightRating { get; set; }
+        public double aimRating { get; set; }
+        public double speedRating { get; set; }
+        public double flashlightRating { get; set; }
     }
 
     class StarRatingTestCase
     {
-        public string filename { get; set; }
-        public List<ExpectedAttributes> cases { get; set; }
+        public string? filename { get; set; }
+        public List<ExpectedAttributes>? cases { get; set; }
     }
 
     [TestFixture]
     public class TestCasesGenerator
     {
+        private IResourceStore<byte[]> resourcesStore => new DllResourceStore(Assembly.GetAssembly(typeof(TestCasesGenerator)));
+
         StarRatingTestCase GenerateOne(string relativeFile)
         {
             var beatmap = getBeatmap(relativeFile);
-            var calculator = new OsuDifficultyCalculator(new OsuRuleset(), beatmap);
+            var calculator = new OsuDifficultyCalculator(new OsuRuleset().RulesetInfo, beatmap);
 
             // There is actually calculator.CreateDifficultyAdjustmentModCombinations() but these are too much
             var modCombos = new[]
@@ -65,6 +53,9 @@ namespace osu.Game.Rulesets.Osu.Tests
                 {
                     mods = modList,
                     starRating = attributes.StarRating,
+                    aimRating = attributes.AimDifficulty,
+                    speedRating = attributes.SpeedDifficulty,
+                    flashlightRating = attributes.FlashlightDifficulty
                 });
             }
 
@@ -77,9 +68,11 @@ namespace osu.Game.Rulesets.Osu.Tests
 
         WorkingBeatmap getBeatmap(string file)
         {
-            string absolutePath = Path.Combine(@"F:\My Drive\RewindTests\osu!\Songs", file);
+            // string absolutePath = Path.Combine(@"Resources/Songs", file);
+            string path = $"Resources/osu-testdata/Songs/{file}";
+            Console.WriteLine(path);
 
-            using (var resStream = new FileStream(absolutePath, FileMode.Open))
+            using (var resStream = resourcesStore.GetStream(path))
             using (var stream = new LineBufferedReader(resStream))
             {
                 var decoder = Decoder.GetDecoder<Beatmap>(stream);
@@ -100,24 +93,25 @@ namespace osu.Game.Rulesets.Osu.Tests
         [TestCase]
         public void Test()
         {
-            string[] files =
-            {
-                @"158023 UNDEAD CORPORATION - Everything will freeze/UNDEAD CORPORATION - Everything will freeze (Ekoro) [Time Freeze].osu",
-                @"931596 Apol - Hidamari no Uta/Apol - Hidamari no Uta (-Keitaro) [Expert].osu",
-                @"1010865 SHK - Violet Perfume [no video]/SHK - Violet Perfume (ktgster) [Insane].osu",
-                @"863227 Brian The Sun - Lonely Go! (TV Size) [no video]/Brian The Sun - Lonely Go! (TV Size) (Nevo) [Fiery's Extreme].osu"
-            };
-            var testCases = new List<StarRatingTestCase>();
+            var assembly = Assembly.GetAssembly(typeof(TestCasesGenerator))!;
+            // TODO: Improve this
+            string osuTestData = Path.Join(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(assembly.Location)))), "Resources/osu-testdata");
 
-            foreach (var file in files)
+            var testCases = new List<StarRatingTestCase>();
+            var songsFolder = Path.Join(osuTestData, "Songs");
+
+            foreach (var file in Directory.GetFiles(songsFolder))
             {
-                testCases.Add(GenerateOne(file));
+                testCases.Add(GenerateOne(Path.GetFileName(file)));
             }
 
-            File.WriteAllText(
-                @"E:\test.json",
-                JsonConvert.SerializeObject(testCases)
-            );
+            const string file_name = "20220928.json";
+            string location = Path.Join(osuTestData, $"out/sr/{file_name}");
+
+            using (var streamWriter = new StreamWriter(location))
+            {
+                streamWriter.Write(JsonConvert.SerializeObject(testCases));
+            }
         }
 
         // TODO Single out a test case

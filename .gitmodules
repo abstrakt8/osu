@@ -1,0 +1,3 @@
+[submodule "osu.Game.Rulesets.Osu.Tests/Resources/osu-testdata"]
+	path = osu.Game.Rulesets.Osu.Tests/Resources/osu-testdata
+	url = https://github.com/abstrakt8/osu-testdata
