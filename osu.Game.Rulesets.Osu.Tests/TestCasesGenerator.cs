@@ -38,9 +38,12 @@ namespace osu.Game.Rulesets.Osu.Tests
                 new Mod[] { new OsuModHalfTime() },
                 new Mod[] { new OsuModDoubleTime() },
                 new Mod[] { new OsuModFlashlight() },
+                new Mod[] { new OsuModFlashlight(), new OsuModHidden() },
                 new Mod[] { new OsuModEasy() },
                 new Mod[] { new OsuModHardRock(), new OsuModDoubleTime() },
                 new Mod[] { new OsuModHardRock(), new OsuModDoubleTime(), new OsuModFlashlight() },
+                new Mod[] { new OsuModHardRock(), new OsuModDoubleTime(), new OsuModFlashlight(), new OsuModHidden() },
+                new Mod[] { new OsuModRelax() },
             };
 
             var list = new List<ExpectedAttributes>();
@@ -68,7 +71,6 @@ namespace osu.Game.Rulesets.Osu.Tests
 
         WorkingBeatmap getBeatmap(string file)
         {
-            // string absolutePath = Path.Combine(@"Resources/Songs", file);
             string path = $"Resources/osu-testdata/Songs/{file}";
             Console.WriteLine(path);
 
@@ -115,5 +117,11 @@ namespace osu.Game.Rulesets.Osu.Tests
         }
 
         // TODO Single out a test case
+        [TestCase]
+        public void TestOne()
+        {
+            string single = "SHK - Violet Perfume (ktgster) [Insane].osu";
+            GenerateOne(single);
+        }
     }
 }
